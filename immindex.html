@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SQL 测试工具</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+
+        #app {
+            max-width: 600px;
+            margin: auto;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+        }
+
+        button {
+            align-self: center;
+            margin-top: 20px;
+        }
+
+        #output {
+            margin-top: 20px;
+            white-space: pre-wrap;
+            background-color: #f9f9f9;
+            padding: 10px;
+            border: 1px solid #ddd;
+            height: 300px;
+            overflow-y: scroll;
+        }
+    </style>
+</head>
+<body>
+<div id="app">
+    <h1>SQL 测试工具</h1>
+    <form id="uploadForm">
+        <label for="testFiles">选择 .test 文件:</label>
+        <input type="file" id="testFiles" name="testFiles" multiple required><br><br>
+
+        <label for="resultFiles">选择 .result 文件:</label>
+        <input type="file" id="resultFiles" name="resultFiles" multiple required><br><br>
+
+        <button type="button" onclick="uploadFiles()">上传并开始测试</button>
+    </form>
+
+    <div id="output"></div>
+</div>
+
+<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+<script>
+    async function uploadFiles() {
+        const testFiles = document.getElementById('testFiles').files;
+        const resultFiles = document.getElementById('resultFiles').files;
+
+        if (testFiles.length !== resultFiles.length) {
+            alert("请选择相同数量的 .test 和 .result 文件");
+            return;
+        }
+
+        const formData = new FormData();
+        Array.from(testFiles).forEach(file => formData.append('testFiles', file));
+        Array.from(resultFiles).forEach(file => formData.append('resultFiles', file));
+
+        try {
+            await axios.post('http://127.0.0.1:8081/api/upload', formData);
+            console.log('文件上传成功');
+            startSqlTests(Array.from(testFiles).map(f => f.name), Array.from(resultFiles).map(f => f.name));
+        } catch (error) {
+            console.error('上传失败:', error);
+        }
+    }
+
+    function startSqlTests(testFileNames, resultFileNames) {
+        const requestData = {testFiles: testFileNames, resultFiles: resultFileNames};
+
+        // Step 1: 发起 POST 请求开始测试
+        fetch('http://127.0.0.1:8081/api/sqltest/start', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(requestData)
+        }).then(response => {
+            if (!response.ok) throw new Error('启动测试失败');
+
+            // Step 2: 开始监听事件流
+            const eventSource = new EventSource('http://127.0.0.1:8081/api/sqltest/sse');
+
+            eventSource.onmessage = function(event) {
+                const output = document.getElementById('output');
+                output.textContent += event.data + '\n';
+                output.scrollTop = output.scrollHeight; // 滚动到底部
+            };
+
+            eventSource.onerror = function(err) {
+                console.error("EventSource 失败:", err);
+                eventSource.close();
+            };
+        }).catch(error => {
+            alert('启动测试出错: ' + error.message);
+        });
+    }
+</script>
+</body>
+</html>
