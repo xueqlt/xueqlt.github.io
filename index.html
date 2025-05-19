@@ -83,7 +83,7 @@
         const requestData = {testFiles: testFileNames, resultFiles: resultFileNames};
 
         // Step 1: 发起 POST 请求开始测试
-        fetch('http://127.0.0.1:8081/api/sqltest/start', {
+        fetch('https://127.0.0.1:8081/api/sqltest/start', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
