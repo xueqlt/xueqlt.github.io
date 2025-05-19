@@ -71,7 +71,7 @@
         Array.from(resultFiles).forEach(file => formData.append('resultFiles', file));
 
         try {
-            await axios.post('http://1.94.103.66:8081/api/upload', formData);
+            await axios.post('https://1.94.103.66:8081/api/upload', formData);
             console.log('文件上传成功');
             startSqlTests(Array.from(testFiles).map(f => f.name), Array.from(resultFiles).map(f => f.name));
         } catch (error) {
@@ -83,7 +83,7 @@
         const requestData = {testFiles: testFileNames, resultFiles: resultFileNames};
 
         // Step 1: 发起 POST 请求开始测试
-        fetch('http://1.94.103.66:8081/api/sqltest/start', {
+        fetch('https://1.94.103.66:8081/api/sqltest/start', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -93,7 +93,7 @@
             if (!response.ok) throw new Error('启动测试失败');
 
             // Step 2: 开始监听事件流
-            const eventSource = new EventSource('http://1.94.103.66:8081/api/sqltest/sse');
+            const eventSource = new EventSource('https://1.94.103.66:8081/api/sqltest/sse');
 
             eventSource.onmessage = function(event) {
                 const output = document.getElementById('output');
